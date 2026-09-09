@@ -5,29 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= typeof title === 'undefined' ? 'Outlook Graph PoC' : title %></title>
   <style>
-    :root { font-family: ui-sans-serif, system-ui, sans-serif; color: #111; }
-    body { margin: 24px auto; max-width: 1100px; }
-    a { color: #0b57d0; }
-    header.top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 16px; }
-    .muted { color: #666; font-size: 13px; }
-    .stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-    .chip { background: #f3f4f6; padding: 6px 10px; border-radius: 6px; font-size: 13px; }
-    table { border-collapse: collapse; width: 100%; font-size: 14px; }
-    th, td { border-bottom: 1px solid #e5e7eb; text-align: left; padding: 8px; vertical-align: top; }
-    th { font-size: 12px; text-transform: uppercase; color: #555; }
+    :root {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      color: #0f172a;
+      --bg: #f4f6f8;
+      --card: #fff;
+      --line: #e2e8f0;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 20px 48px; }
+    header.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 22px; }
+    h1 a { color: inherit; text-decoration: none; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .panel {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px 18px; margin-bottom: 16px;
+    }
+    .scheduler { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+    .kv { background: #f8fafc; border-radius: 10px; padding: 10px 12px; }
+    .kv b { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
+    .stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+    .chip { background: #e2e8f0; padding: 6px 10px; border-radius: 999px; font-size: 12px; }
+    .chip.ok { background: #dcfce7; }
+    .chip.warn { background: #fee2e2; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; background: var(--card); border-radius: 12px; overflow: hidden; }
+    th, td { border-bottom: 1px solid var(--line); text-align: left; padding: 10px 12px; vertical-align: middle; }
+    th { font-size: 11px; text-transform: uppercase; color: var(--muted); background: #f8fafc; }
     .actions { display: flex; flex-wrap: wrap; gap: 6px; }
-    button, .btn { background: #111; color: #fff; border: 0; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
-    .btn.secondary { background: #e5e7eb; color: #111; }
-    .warn { background: #fff4e5; padding: 10px 12px; border-radius: 6px; }
-    dl { display: grid; grid-template-columns: 180px 1fr; gap: 6px 12px; }
-    dt { color: #555; }
-    pre { white-space: pre-wrap; word-break: break-all; }
+    button, .btn {
+      background: #0f172a; color: #fff; border: 0; padding: 8px 12px; border-radius: 8px;
+      cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block;
+    }
+    .btn.secondary, button.secondary { background: #e2e8f0; color: #0f172a; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #e2e8f0; }
+    .pill.running { background: #dcfce7; }
+    .pill.reauth { background: #fee2e2; }
+    .warn { background: #fff7ed; padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; }
+    dl { display: grid; grid-template-columns: 180px 1fr; gap: 8px 12px; }
+    dt { color: var(--muted); }
+    a { color: #1d4ed8; }
   </style>
 </head>
 <body>
+  <div class="wrap">
   <header class="top">
     <div>
-      <h1 style="margin:0;font-size:22px;"><a href="/" style="color:inherit;text-decoration:none;">Outlook Graph PoC</a></h1>
-      <div class="muted">CSV 账本 · 一个 Microsoft App · 10 个 Outlook.com</div>
+      <h1><a href="/">Outlook Graph PoC</a></h1>
+      <div class="muted">公平轮询 · 全局限流 · CSV 账本</div>
     </div>
   </header>

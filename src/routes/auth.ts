@@ -50,7 +50,7 @@ authRouter.get("/microsoft/callback", async (req, res, next) => {
     const account = await upsertAccountByEmail({
       email,
       microsoft_user_id: me.id ?? "",
-      statusIfNew: "Pending",
+      statusIfNew: "Running",
     });
     await saveTokenCache(account.token_file, serializedCache);
     res.redirect("/");

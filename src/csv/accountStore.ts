@@ -47,8 +47,12 @@ export async function upsertAccountByEmail(input: {
       existing.microsoft_user_id = input.microsoft_user_id;
       if (input.token_file) existing.token_file = input.token_file;
       existing.last_error = "";
-      if (existing.status === "ReauthRequired" || existing.status === "Error") {
-        existing.status = "Config-Run";
+      if (
+        existing.status === "ReauthRequired" ||
+        existing.status === "Error" ||
+        existing.status === "Disabled"
+      ) {
+        existing.status = "Running";
         existing.status_changed_at = ts;
       }
       existing.updated_at = ts;
@@ -97,4 +101,19 @@ export async function updateAccount(
     return rows;
   });
   return saved;
+}
+
+export async function migrateLegacyStatuses(): Promise<void> {
+  await withCsvFile<Account>(config.accountsCsv, ACCOUNT_COLUMNS, (rows) => {
+    const ts = nowIso();
+    for (const row of rows) {
+      const status = String(row.status);
+      if (status === "Pending" || status === "Config-Run") {
+        row.status = "Running";
+        row.status_changed_at = ts;
+        row.updated_at = ts;
+      }
+    }
+    return rows;
+  });
 }

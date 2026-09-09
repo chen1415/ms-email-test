@@ -1,6 +1,5 @@
 export type AccountStatus =
-  | "Pending"
-  | "Config-Run"
+  | "Running"
   | "ReauthRequired"
   | "Error"
   | "Disabled";

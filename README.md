@@ -20,7 +20,7 @@ yarn dev
 
 本地 `yarn dev` 监听 `PORT`（默认 3000），再用 ngrok 把该端口暴露成 HTTPS。浏览器走 ngrok 地址，不要用 localhost 做 OAuth 回调。
 
-先填好 `.env` 里的 `MS_CLIENT_ID` / `MS_CLIENT_SECRET` / `MS_REDIRECT_URI`，再点「添加 Outlook」。密码在微软登录页输入，不会写入 CSV。
+先填好 `.env` 里的 `MS_CLIENT_ID` / `MS_CLIENT_SECRET` / `MS_REDIRECT_URI`。打开 ngrok 地址会先要 **页面密码**（默认 `123456`），再点「添加 Outlook」。Outlook 密码在微软登录页输入，不会写入 CSV。
 
 ## 1. 数据库（暂时用 CSV）
 
@@ -28,9 +28,9 @@ yarn dev
 
 **`data/outlook_accounts.csv`**：一行一个邮箱。
 
-- 登录配好 → `Pending` + `status_changed_at`
-- 点开始 / Sync Now → `Config-Run`
-- Worker **只处理 Config-Run**
+- 登录成功 → `Running`，进入限流调度队列
+- Worker **只处理 Running**（公平轮询，默认每分钟最多 20 个号）
+- Disable 后停止；token 失效才要 Re-auth
 - 同一邮箱只有一行
 
 **`data/outlook_redirects.csv`**：哪个邮箱的哪封信处理过。
@@ -77,20 +77,20 @@ MS_TENANT=consumers
 MS_REDIRECT_URI=https://<your-ngrok-host>/auth/microsoft/callback
 ```
 
-点「添加 Outlook」应跳到微软登录；同意 Mail.Read 后回到首页，账号表出现该邮箱且为 `Pending`。
+点「添加 Outlook」应跳到微软登录；同意 Mail.Read 后回到首页，账号表出现该邮箱且为 `Running`。
 
 常见错误：redirect 多一个 `/`（AADSTS50011）；单租户导致 Outlook.com 登不进；复制了 Secret ID 而不是 Value。
 
 ## 3. 怎么测
 
-1. 登录后 `outlook_accounts.csv` 有该邮箱、`Pending`、时间；`data/tokens/` 有 json；CSV 里没有密码。
+1. 页面密码进入后，添加 Outlook：`outlook_accounts.csv` 有该邮箱、`Running`；`data/tokens/` 有 json。
 2. 同一邮箱再登录：仍一行，token 更新。
-3. 点开始：变成 `Config-Run`。
-4. `ENABLE_FORWARD=false` 时 Sync：`outlook_redirects.csv` 新增 `Seen`；再 Sync / 重启不新增同一 `graph_message_id`。
-5. `ENABLE_FORWARD=true` 且配好 SMTP 后：该行变 `Success`；再 Sync 不会往 Fastmail 多投。
-6. 破坏 token 再 Sync：该账号 `ReauthRequired`，其它 Config-Run 不受影响。
+3. 调度器自动轮询，不必 Sync Now。首页能看到本轮进度和配额。
+4. `ENABLE_FORWARD=false` 时新信为 `Seen`；再轮询不新增同一 `graph_message_id`。
+5. `ENABLE_FORWARD=true` 且配好 SMTP 后：该行变 `Success`，不会重复投。
+6. 破坏 token 后该号 `ReauthRequired`，其它 Running 不受影响。
 7. 每个号至少测：纯文本、HTML、附件、primary、alias。看 EML 的 `To:`。
-8. 10 个号 Config-Run 连跑 7~14 天，看是否频繁 re-auth / 429。
+8. 多号 Running 连跑 7~14 天，看是否频繁 re-auth / 429。
 
 ## 明确不做
 

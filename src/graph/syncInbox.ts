@@ -16,31 +16,18 @@ import {
 } from "./graphClient.js";
 import { forwardReady, resendToFastmail } from "../mail/resendToFastmail.js";
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+export type SyncResult =
+  | { kind: "ok" }
+  | { kind: "skip" }
+  | { kind: "reauth" }
+  | { kind: "throttle"; retryAfterSec: number }
+  | { kind: "error" };
 
 function recipientList(msg: GraphMessage): string {
   return (msg.toRecipients ?? [])
     .map((r) => r.emailAddress?.address ?? "")
     .filter(Boolean)
     .join("; ");
-}
-
-async function graphJsonRetry<T>(
-  url: string,
-  accessToken: string,
-): Promise<T> {
-  try {
-    return await graphJson<T>(url, accessToken);
-  } catch (err) {
-    if (err instanceof GraphError && err.status === 429) {
-      const wait = (err.retryAfterSec ?? 10) * 1000;
-      await sleep(wait);
-      return graphJson<T>(url, accessToken);
-    }
-    throw err;
-  }
 }
 
 export async function maybeForward(row: RedirectRow): Promise<RedirectRow> {
@@ -62,15 +49,13 @@ export async function maybeForward(row: RedirectRow): Promise<RedirectRow> {
   }
 }
 
-export async function syncAccount(account: Account): Promise<void> {
-  if (account.status !== "Config-Run") return;
+export async function syncAccount(account: Account): Promise<SyncResult> {
+  if (account.status !== "Running") return { kind: "skip" };
 
   let accessToken: string;
   try {
     accessToken = await getAccessToken(account.token_file);
-    await updateAccount(account.id, {
-      last_error: "",
-    });
+    await updateAccount(account.id, { last_error: "" });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await updateAccount(account.id, {
@@ -78,7 +63,7 @@ export async function syncAccount(account: Account): Promise<void> {
       last_error: message.slice(0, 500),
       error_count: String(Number(account.error_count || 0) + 1),
     });
-    return;
+    return { kind: "reauth" };
   }
 
   const startUrl =
@@ -90,7 +75,7 @@ export async function syncAccount(account: Account): Promise<void> {
 
   try {
     while (url) {
-      const page: GraphDeltaPage = await graphJsonRetry<GraphDeltaPage>(
+      const page: GraphDeltaPage = await graphJson<GraphDeltaPage>(
         url,
         accessToken,
       );
@@ -108,23 +93,27 @@ export async function syncAccount(account: Account): Promise<void> {
       last_sync_at: new Date().toISOString(),
       last_error: "",
     });
+    return { kind: "ok" };
   } catch (err) {
+    if (err instanceof GraphError && err.status === 429) {
+      return { kind: "throttle", retryAfterSec: err.retryAfterSec ?? 10 };
+    }
     if (err instanceof GraphError && err.status === 401) {
       await updateAccount(account.id, {
         status: "ReauthRequired",
         last_error: err.message.slice(0, 500),
         error_count: String(Number(account.error_count || 0) + 1),
       });
-      return;
+      return { kind: "reauth" };
     }
     const message = err instanceof Error ? err.message : String(err);
-    const keepRunning =
-      err instanceof GraphError && (err.status === 429 || err.status >= 500);
+    const keepRunning = err instanceof GraphError && err.status >= 500;
     await updateAccount(account.id, {
-      status: keepRunning ? "Config-Run" : "Error",
+      status: keepRunning ? "Running" : "Error",
       last_error: message.slice(0, 500),
       error_count: String(Number(account.error_count || 0) + 1),
     });
+    return { kind: "error" };
   }
 }
 

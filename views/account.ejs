@@ -1,31 +1,27 @@
 <%- include('partials/head', { title: account.email }) %>
 
-<h2><%= account.email %></h2>
+<h2 style="margin-top:0;"><%= account.email %></h2>
 
-<dl>
-  <dt>Status</dt><dd><%= account.status %></dd>
-  <dt>Status time</dt><dd><%= account.status_changed_at %></dd>
+<dl class="panel">
+  <dt>Status</dt><dd><span class="pill <%= account.status === 'Running' ? 'running' : '' %>"><%= account.status %></span></dd>
+  <dt>Status time</dt><dd><%= formatTime(account.status_changed_at) %></dd>
   <dt>Microsoft user id</dt><dd><%= account.microsoft_user_id || '-' %></dd>
   <dt>Token file</dt><dd><%= account.token_file %></dd>
-  <dt>Last sync</dt><dd><%= account.last_sync_at || '-' %></dd>
+  <dt>Last sync</dt><dd><%= formatTime(account.last_sync_at) %></dd>
   <dt>Delta link</dt><dd><%= account.delta_link ? 'Present' : '-' %></dd>
   <dt>Error count</dt><dd><%= account.error_count %></dd>
   <dt>Last error</dt><dd><%= account.last_error || '-' %></dd>
 </dl>
 
-<div class="actions">
-  <% if (account.status !== 'Config-Run') { %>
-    <form method="post" action="/account/<%= account.id %>/start">
-      <button type="submit">开始 (Config-Run)</button>
+<div class="actions" style="margin:14px 0;">
+  <% if (account.status === 'ReauthRequired') { %>
+    <a class="btn" href="/auth/microsoft">Re-auth</a>
+  <% } %>
+  <% if (account.status !== 'Disabled') { %>
+    <form method="post" action="/account/<%= account.id %>/disable">
+      <button type="submit" class="secondary">Disable</button>
     </form>
   <% } %>
-  <form method="post" action="/account/<%= account.id %>/sync">
-    <button type="submit">Sync Now</button>
-  </form>
-  <a class="btn secondary" href="/auth/microsoft">Re-auth</a>
-  <form method="post" action="/account/<%= account.id %>/disable">
-    <button type="submit">Disable</button>
-  </form>
   <a class="btn secondary" href="/">返回</a>
 </div>
 
@@ -42,11 +38,11 @@
   </thead>
   <tbody>
     <% if (messages.length === 0) { %>
-      <tr><td colspan="5" class="muted">还没有邮件记录。账号需为 Config-Run 后再 Sync。</td></tr>
+      <tr><td colspan="5" class="muted">还没有邮件记录。调度器轮到这个号后会自动拉取。</td></tr>
     <% } %>
     <% messages.forEach(function (message) { %>
       <tr>
-        <td><a href="/message/<%= message.id %>"><%= message.received_at || '-' %></a></td>
+        <td><a href="/message/<%= message.id %>"><%= formatTime(message.received_at) %></a></td>
         <td><%= message.subject %></td>
         <td><%= message.from_addr %></td>
         <td><%= message.eml_path ? 'Ready' : '-' %></td>
@@ -55,5 +51,6 @@
     <% }) %>
   </tbody>
 </table>
+</div>
 </body>
 </html>
