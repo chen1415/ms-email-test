@@ -18,7 +18,9 @@ yarn
 yarn dev
 ```
 
-打开 http://localhost:3000 。先填好 `.env` 里的 `MS_CLIENT_ID` / `MS_CLIENT_SECRET`，再点「添加 Outlook」。密码在微软登录页输入，不会写入 CSV。
+本地 `yarn dev` 监听 `PORT`（默认 3000），再用 ngrok 把该端口暴露成 HTTPS。浏览器走 ngrok 地址，不要用 localhost 做 OAuth 回调。
+
+先填好 `.env` 里的 `MS_CLIENT_ID` / `MS_CLIENT_SECRET` / `MS_REDIRECT_URI`，再点「添加 Outlook」。密码在微软登录页输入，不会写入 CSV。
 
 ## 1. 数据库（暂时用 CSV）
 
@@ -46,10 +48,10 @@ yarn dev
 1. 打开 [Entra 管理中心](https://entra.microsoft.com) → **App registrations** → **New registration**。
 2. Name：`Outlook Graph Mail PoC`。
 3. 账号类型选 **Personal Microsoft accounts only**（不要选「仅本组织」）。
-4. Redirect URI 选 **Web**，填（必须和 `.env` 一字不差）：
+4. Redirect URI 选 **Web**，填 ngrok 的 HTTPS 回调（必须和 `.env` 里 `MS_REDIRECT_URI` 一字不差）：
 
 ```text
-http://localhost:3000/auth/microsoft/callback
+https://<your-ngrok-host>/auth/microsoft/callback
 ```
 
 5. 记下 Application (client) ID → `MS_CLIENT_ID`。
@@ -72,7 +74,7 @@ Mail.Read
 MS_CLIENT_ID=...
 MS_CLIENT_SECRET=...
 MS_TENANT=consumers
-MS_REDIRECT_URI=http://localhost:3000/auth/microsoft/callback
+MS_REDIRECT_URI=https://<your-ngrok-host>/auth/microsoft/callback
 ```
 
 点「添加 Outlook」应跳到微软登录；同意 Mail.Read 后回到首页，账号表出现该邮箱且为 `Pending`。

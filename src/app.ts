@@ -22,6 +22,7 @@ async function main(): Promise<void> {
   await ensureStorage();
 
   const app = express();
+  app.set("trust proxy", 1);
   app.set("view engine", "ejs");
   app.set("views", path.join(config.rootDir, "views"));
   app.use(express.urlencoded({ extended: false }));
@@ -30,7 +31,8 @@ async function main(): Promise<void> {
       secret: config.sessionSecret,
       resave: false,
       saveUninitialized: false,
-      cookie: { httpOnly: true },
+      proxy: true,
+      cookie: { httpOnly: true, secure: "auto", sameSite: "lax" },
     }),
   );
 
@@ -60,6 +62,7 @@ async function main(): Promise<void> {
 
   app.listen(config.port, () => {
     console.log(`ms-email-test listening on http://localhost:${config.port}`);
+    console.log(`OAuth redirect: ${config.msRedirectUri}`);
     if (!msConfigured()) {
       console.log("MS_CLIENT_ID / MS_CLIENT_SECRET not set. Add Outlook will fail until .env is filled.");
     }
