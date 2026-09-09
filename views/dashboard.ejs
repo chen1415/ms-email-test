@@ -1,0 +1,72 @@
+<%- include('partials/head', { title: 'Outlook Graph PoC' }) %>
+
+<% if (!msConfigured) { %>
+  <p class="warn">还没有配置 <code>MS_CLIENT_ID</code> / <code>MS_CLIENT_SECRET</code>。复制 <code>.env.example</code> 为 <code>.env</code>，按 README 注册 Entra 应用后再添加账号。</p>
+<% } %>
+
+<div class="actions">
+  <a class="btn" href="/auth/microsoft">添加 Outlook</a>
+  <form method="post" action="/sync-all" style="display:inline;">
+    <button type="submit">同步全部 Config-Run</button>
+  </form>
+</div>
+
+<div class="stats">
+  <span class="chip">Accounts <%= stats.accounts %></span>
+  <span class="chip">Pending <%= stats.pending %></span>
+  <span class="chip">Config-Run <%= stats.configRun %></span>
+  <span class="chip">ReauthRequired <%= stats.reauth %></span>
+  <span class="chip">Messages <%= stats.messages %></span>
+  <span class="chip">EML <%= stats.eml %></span>
+  <span class="chip">Redirect Success <%= stats.success %></span>
+  <span class="chip">Redirect Failed <%= stats.failed %></span>
+  <span class="chip">Duplicate prevented <%= stats.duplicatePrevented %></span>
+  <span class="chip">Graph 401 <%= stats.graph401 %></span>
+  <span class="chip">Graph 429 <%= stats.graph429 %></span>
+  <span class="chip">Graph 5xx <%= stats.graph5xx %></span>
+  <span class="chip">Forward <%= enableForward ? 'on' : 'off' %></span>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Status</th>
+      <th>Status time</th>
+      <th>Last sync</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (accounts.length === 0) { %>
+      <tr><td colspan="5" class="muted">还没有账号。点「添加 Outlook」，在微软页面登录。</td></tr>
+    <% } %>
+    <% accounts.forEach(function (account) { %>
+      <tr>
+        <td><a href="/account/<%= account.id %>"><%= account.email %></a></td>
+        <td><%= account.status %></td>
+        <td><%= account.status_changed_at %></td>
+        <td><%= account.last_sync_at || '-' %></td>
+        <td class="actions">
+          <a class="btn secondary" href="/account/<%= account.id %>">查看</a>
+          <% if (account.status === 'Pending') { %>
+            <form method="post" action="/account/<%= account.id %>/start">
+              <button type="submit">开始 (Config-Run)</button>
+            </form>
+          <% } %>
+          <form method="post" action="/account/<%= account.id %>/sync">
+            <button type="submit">Sync Now</button>
+          </form>
+          <a class="btn secondary" href="/auth/microsoft">Re-auth</a>
+          <form method="post" action="/account/<%= account.id %>/disable">
+            <button type="submit">Disable</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<p class="muted">密码不会写入 CSV。账号表：<code>data/outlook_accounts.csv</code>；重定向表：<code>data/outlook_redirects.csv</code>。</p>
+</body>
+</html>

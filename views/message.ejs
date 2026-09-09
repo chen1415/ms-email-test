@@ -1,0 +1,30 @@
+<%- include('partials/head', { title: message.subject || 'Message' }) %>
+
+<h2><%= message.subject || '(no subject)' %></h2>
+
+<dl>
+  <dt>Account</dt><dd><a href="/account/<%= message.account_id %>"><%= message.email %></a></dd>
+  <dt>Received at</dt><dd><%= message.received_at || '-' %></dd>
+  <dt>From</dt><dd><%= message.from_addr %></dd>
+  <dt>To</dt><dd><%= message.to_addr %></dd>
+  <dt>Internet Message ID</dt><dd><%= message.internet_message_id || '-' %></dd>
+  <dt>Graph Message ID</dt><dd><%= message.graph_message_id %></dd>
+  <dt>EML path</dt><dd><%= message.eml_path || '-' %></dd>
+  <dt>Redirect status</dt><dd><%= message.redirect_status %></dd>
+  <dt>Redirected at</dt><dd><%= message.redirected_at || '-' %></dd>
+  <dt>Last error</dt><dd><%= message.last_error || '-' %></dd>
+</dl>
+
+<div class="actions">
+  <% if (message.eml_path) { %>
+    <a class="btn" href="/message/<%= message.id %>/eml">下载 EML</a>
+  <% } %>
+  <% if (message.redirect_status !== 'Success') { %>
+    <form method="post" action="/message/<%= message.id %>/retry-forward">
+      <button type="submit" <%= forwardReady ? '' : 'disabled' %>>Retry Forward</button>
+    </form>
+  <% } %>
+  <a class="btn secondary" href="/account/<%= message.account_id %>">返回账号</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+data/tokens/
+data/*.csv
+!data/.gitkeep
+storage/eml/*.eml
+.DS_Store

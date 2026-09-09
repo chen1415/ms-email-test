@@ -1,0 +1,59 @@
+<%- include('partials/head', { title: account.email }) %>
+
+<h2><%= account.email %></h2>
+
+<dl>
+  <dt>Status</dt><dd><%= account.status %></dd>
+  <dt>Status time</dt><dd><%= account.status_changed_at %></dd>
+  <dt>Microsoft user id</dt><dd><%= account.microsoft_user_id || '-' %></dd>
+  <dt>Token file</dt><dd><%= account.token_file %></dd>
+  <dt>Last sync</dt><dd><%= account.last_sync_at || '-' %></dd>
+  <dt>Delta link</dt><dd><%= account.delta_link ? 'Present' : '-' %></dd>
+  <dt>Error count</dt><dd><%= account.error_count %></dd>
+  <dt>Last error</dt><dd><%= account.last_error || '-' %></dd>
+</dl>
+
+<div class="actions">
+  <% if (account.status !== 'Config-Run') { %>
+    <form method="post" action="/account/<%= account.id %>/start">
+      <button type="submit">开始 (Config-Run)</button>
+    </form>
+  <% } %>
+  <form method="post" action="/account/<%= account.id %>/sync">
+    <button type="submit">Sync Now</button>
+  </form>
+  <a class="btn secondary" href="/auth/microsoft">Re-auth</a>
+  <form method="post" action="/account/<%= account.id %>/disable">
+    <button type="submit">Disable</button>
+  </form>
+  <a class="btn secondary" href="/">返回</a>
+</div>
+
+<h3>邮件 / 重定向账本</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Received</th>
+      <th>Subject</th>
+      <th>From</th>
+      <th>EML</th>
+      <th>Redirect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% if (messages.length === 0) { %>
+      <tr><td colspan="5" class="muted">还没有邮件记录。账号需为 Config-Run 后再 Sync。</td></tr>
+    <% } %>
+    <% messages.forEach(function (message) { %>
+      <tr>
+        <td><a href="/message/<%= message.id %>"><%= message.received_at || '-' %></a></td>
+        <td><%= message.subject %></td>
+        <td><%= message.from_addr %></td>
+        <td><%= message.eml_path ? 'Ready' : '-' %></td>
+        <td><%= message.redirect_status %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+</body>
+</html>
